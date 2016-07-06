@@ -23,8 +23,7 @@ import (
 
 
 type Panda  struct {
-    Id int
-    Name string
+    bloque string
 }
 
 //Handle all requests
@@ -41,7 +40,7 @@ func Handler(response http.ResponseWriter, request *http.Request){
 func APIHandler(response http.ResponseWriter, request *http.Request){
 
     //Connect to database
-    db, e := sql.Open("mysql", "username:password@tcp(localhost:3306)/farm")
+    db, e := sql.Open("mysql", "iacoman:Iaco.2010@tcp(marta.ctrenoefei46.sa-east-1.rds.amazonaws.com:3306)/martadb")
      if( e != nil){
       fmt.Print(e)
      }
@@ -60,9 +59,9 @@ func APIHandler(response http.ResponseWriter, request *http.Request){
 
     switch request.Method {
         case "GET":
-            st, err := db.Prepare("select * from pandas limit 10")
+            st, err := db.Prepare("select bloque from bloques")
              if err != nil{
-              fmt.Print( err );
+              fmt.Print( err );	
              }
              rows, err := st.Query()
              if err != nil {
@@ -70,27 +69,24 @@ func APIHandler(response http.ResponseWriter, request *http.Request){
              }
              i := 0
              for rows.Next() {
-              var name string
-              var id int
-              err = rows.Scan( &id, &name )
-              panda := &Panda{Id: id,Name:name}
-                b, err := json.Marshal(panda)
-                if err != nil {
-                    fmt.Println(err)
-                    return
-                }
-              result[i] = fmt.Sprintf("%s", string(b))
+              var bloque string
+              err = rows.Scan( &bloque )
+              panda := Panda{"bloque : "+bloque}
+              fmt.Printf("%s", panda)
+                
+               result[i] = fmt.Sprintf("%s", panda)
               i++
              }
+
             result = result[:i]
 
         case "POST":
-            name := request.PostFormValue("name")
-            st, err := db.Prepare("INSERT INTO pandas(name) VALUES(?)")
+            bloque := request.PostFormValue("bloque")
+            st, err := db.Prepare("select bloque from bloques")
              if err != nil{
               fmt.Print( err );
              }
-             res, err := st.Exec(name)
+             res, err := st.Exec(bloque)
              if err != nil {
               fmt.Print( err )
              }
@@ -101,14 +97,14 @@ func APIHandler(response http.ResponseWriter, request *http.Request){
             result = result[:1]
 
         case "PUT":
-            name := request.PostFormValue("name")
+            bloque := request.PostFormValue("bloque")
             id := request.PostFormValue("id")
 
-            st, err := db.Prepare("UPDATE pandas SET name=? WHERE id=?")
+            st, err := db.Prepare("select bloque from bloques")
              if err != nil{
               fmt.Print( err );
              }
-             res, err := st.Exec(name,id)
+             res, err := st.Exec(bloque,id)
              if err != nil {
               fmt.Print( err )
              }
@@ -118,8 +114,8 @@ func APIHandler(response http.ResponseWriter, request *http.Request){
              }
             result = result[:1]
         case "DELETE":
-            id := strings.Replace(request.URL.Path,"/api/","",-1)
-            st, err := db.Prepare("DELETE FROM pandas WHERE id=?")
+            id := strings.Replace(request.URL.Path,"/getBlocks","",-1)
+            st, err := db.Prepare("select bloque from bloques")
              if err != nil{
               fmt.Print( err );
              }
@@ -142,20 +138,26 @@ func APIHandler(response http.ResponseWriter, request *http.Request){
         return
     }
 
+    //fmt.Sprintf("%s", string(json))
+    //fmt.Sprintf("%s", result)
+
+
 	// Send the text diagnostics to the client.
+    //fmt.Fprintf(response,"%v",result)
     fmt.Fprintf(response,"%v",string(json))
+
 	//fmt.Fprintf(response, " request.URL.Path   '%v'\n", request.Method)
     db.Close()
 }
 
 
 func main(){
-	port := 1234
+	port := 80
     var err string
 	portstring := strconv.Itoa(port)
 
 	mux := http.NewServeMux()
-	mux.Handle("/api/", http.HandlerFunc( APIHandler ))
+	mux.Handle("/getBlocks", http.HandlerFunc( APIHandler ))
 	mux.Handle("/", http.HandlerFunc( Handler ))
 
 	// Start listing on a given port with these routes on this server.
